@@ -1,0 +1,9 @@
+# Geliştiriciler için
+
+### kubectl, docker temel komutları ile terminalde yön bulma
+
+Docker cli tool kullanımı docker runtime koşulan server'larda çalışan ve konteynerler ile ilgili bilgi edinmek isteyen herkes için kullanışlı olacaktır.
+Temel konseptleri ve Dockerfile detaylarını [linkten](https://github.com/AhmetOgulcanCankaya/devops/blob/master/docker/docker-general.md "docker-general türkçe") görebilirsiniz.
+
+Burada ``` docker run ``` komutlarına girmeyeceğim. Elimizin altında bulunan ve aktif olarak çalışan bir cluster için konuşacağız.
+
