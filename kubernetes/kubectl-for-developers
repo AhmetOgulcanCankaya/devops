@@ -7,3 +7,51 @@ Temel konseptleri ve Dockerfile detaylarını [linkten](https://github.com/Ahmet
 
 Burada ``` docker run ``` komutlarına girmeyeceğim. Elimizin altında bulunan ve aktif olarak çalışan bir cluster için konuşacağız.
 
+Devam etmeden önce aşağıdaki temel konseptlerde bilgi sahibi olduğunuz konusunda hemfikir olmak istiyorum:
+- Kubernetes, temel yapı taşı Pod olan ve yaml konfigürasyonları ile iş yüklerimizin tanımını yapabildiğimiz, docker veya containerd gibi konteyner teknolojilerini kullanan bir altyapıdır.
+- Bir kaynağın (Deployment,Pod,Ingress vb.) üzerinde işlem yaparken kaynağın tanımını değiştirebilecek işlemleri mümkün mertebe yaml dosyaları ile yapmalıyız.
+- Development veya test ortamlarında istediğimiz işlemi yapabiliriz anlamı çıkmadan, geri dönmek konusunda sorun yaşamayacağımız işlemleri yapmaya dikkat etmeliyiz.
+- Temel veri sürekliliği kaynakları olan PersistentVolume ve PersistentVolumeClaim kaynaklarında değişiklik yapmaktan kaçınmalıyız. StorageClass'lar bunun için var.
+
+kubectl aracının temel kullanım metodu aşağıdaki gibidir:
+
+kubectl [action] [resource] [options] [parameters]
+
+Burada action kubectl'in desteklediği temel komut zincirlerini temsil etmektedir.
+Bunlar arasında sıklıkla kullandığımız zincirler:
+
+apply: kendisinden sonra belirtilecek olan dizindeki dosyayı veya dosyaları yaml formatında olmaları koşuluyla kube-apiserver'a gönderir. Bu kaynakların yaratılmasında görev alır.
+delete: apply komutunda olduğu gibi çalışır. Yaml formatında bulunan dosyalardaki tanımlı kaynakların silinme işleminde görev alır
+get: Neredeyse en sık kullanılan CLI sub-command'lerinden biridir. Pod, Deployment, Node listelerinin alınmasında görev alır
+explain: [resource] alanında belirteceğiniz kaynak tipi için kısa bir açıklamaya ihtiyaç duyduğunuzda kullanabilirsiniz.
+edit: Var olan bir kaynağı sistemde koşarken değiştirmek için kullanılır. Örnek: Sıklıkla konfigürasyon (ConfigMap) değişiminde test amaçlı kullanıyorum.
+create: Sıklıkla kullanılan kaynakların CLI üzerinden yaratılmasında kullanılır. --dry-run parametresi ile kullanmaya özen gösterin. Kelimelerin gücü bu şekilde ortaya çıkacaktır.
+describe: Belirtilecek olan resource tipindeki spesifik bir kaynağın sistem tanımına ulaşmak için kullanılır. Örnek: k describe po [PodName] şeklinde, Pod'lar için hata ayıklamada sıklıkla kullanıyorum
+exec: Konteyner içinde bir komut koşmak için kullanılır. Pod adı vererek "k exec [PodName] -- [Komut]" şeklinde kullanabilirsiniz ancak Pod içinde tek bir konteyner bulunmasına dikkat edin.
+top: Node veya Pod için kaynak kullanımlarının görüntülenmesinde kullanılır. Farklı çözümlerle daha detaylı görüntülemeler elde edebilirsiniz ancak zorda kalmamamız için kubernetes.io bizleri düşünmüş.
+logs: Bir konteynerin veya pod'un log'larını bastırmak için kullanıyoruz. tail komutunun -f parametresini hatırlıyorsanız burada da follow için kullanabilirsiniz.
+
+
+kubectl komutu sistemlerde sıklıkla k kısaltmasıyla karşımıza çıkar. Kaynakların da kendi kısaltmaları bulunmaktadır.
+pods -> po
+namespace -> ns
+PersistentVolume -> pv
+PersistentVolumeClaim -> pvc
+ingresses -> ing
+deployments -> deploy
+statefulSets -> sts
+services -> svc
+configMap -> cm
+
+k get po -> bulunduğumuz namespace içerisinde çalışan pod kaynaklarını listeler
+Bulunduğumuz namespace altında kaynak bulunmuyorsa -n (namespace) parametresini ekleyerek başka bir namespace'i görüntüleyebiliriz.
+Hangi namespace'de çalıştığımızı unutmuş olabiliriz. Yine k get ns diyerek namespace'leri listeleyebilir veya 
+kendimize güveniyorsak -A parametresi ile yola çıkabilir ve pod isimleri arasından kendi kaynaklarımızı bulmaya çalışabiliriz.
+
+### Pod'larda sorun çözümü
+Sıkça logs, describe ve exec kullanıyoruz. describe sub-command çıktısında yanıtı bulamıyorsak (örn. calico, sandbox, unable to attach persistentVolume, vb.) ve 
+pod sağlıklı görünüyor ancak davranmıyorsa logs yardımımıza koşuyor. k logs [podName] ile logları ekrana bastırıyor veya -f parametresi de ekleyerek aktif bir log window oluşturuyoruz.
+Buradan da sağlıklı bir çıkarım yapamamamız halinde son çözüm olarak konteynere doğrudan elle müdahale ediyor, gerekmesi halinde aktif sistemde değişikliğe gidiyoruz.
+
+
+
