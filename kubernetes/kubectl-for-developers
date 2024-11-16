@@ -15,7 +15,7 @@ Devam etmeden önce aşağıdaki temel konseptlerde bilgi sahibi olduğunuz konu
 - Ingress kaynakları network üzerinde DNS kaydı fonksiyonalitesini genişletmek için kullanılır ve belirlenen kurallar çerçevesinde genellikle HTTP veya TCP üzerinden güvenli/güvensiz network erişimi sağlamak için kullanılır.
   example.com'a tanımlı server yanıt veriyorsa ve üzerinde kubernetes varsa bundan faydalanmam için subdomain tanımı yapmam yeterli olacaktır. Böylece ornek.example.com adresinden web hizmeti verebilirim.  
 
-kubectl aracının temel kullanım metodu aşağıdaki gibidir:
+kubectl aracının temel kullanım yapısı aşağıdaki gibidir:
 
 kubectl [action] [resource] [options] [parameters]
 
