@@ -1,17 +1,19 @@
 # Geliştiriciler için
 
-### kubectl, docker temel komutları ile terminalde yön bulma
+### kubectl temel komutları ile terminalde yön bulma ve örneklemeleri
 
 Docker cli tool kullanımı docker runtime koşulan server'larda çalışan ve konteynerler ile ilgili bilgi edinmek isteyen herkes için kullanışlı olacaktır.
 Temel konseptleri ve Dockerfile detaylarını [linkten](https://github.com/AhmetOgulcanCankaya/devops/blob/master/docker/docker-general.md "docker-general türkçe") görebilirsiniz.
 
-Burada ``` docker run ``` komutlarına girmeyeceğim. Elimizin altında bulunan ve aktif olarak çalışan bir cluster için konuşacağız.
+Not :Burada ``` docker run ``` komutlarına girmeyeceğim. Elimizin altında bulunan ve aktif olarak çalışan bir cluster için konuşacağız.
 
 Devam etmeden önce aşağıdaki temel konseptlerde bilgi sahibi olduğunuz konusunda hemfikir olmak istiyorum:
 - Kubernetes, temel yapı taşı Pod olan ve yaml konfigürasyonları ile iş yüklerimizin tanımını yapabildiğimiz, docker veya containerd gibi konteyner teknolojilerini kullanan bir altyapıdır.
 - Bir kaynağın (Deployment,Pod,Ingress vb.) üzerinde işlem yaparken kaynağın tanımını değiştirebilecek işlemleri mümkün mertebe yaml dosyaları ile yapmalıyız.
 - Development veya test ortamlarında istediğimiz işlemi yapabiliriz anlamı çıkmadan, geri dönmek konusunda sorun yaşamayacağımız işlemleri yapmaya dikkat etmeliyiz.
 - Temel veri sürekliliği kaynakları olan PersistentVolume ve PersistentVolumeClaim kaynaklarında değişiklik yapmaktan kaçınmalıyız. StorageClass'lar bunun için var.
+- Ingress kaynakları network üzerinde DNS kaydı fonksiyonalitesini genişletmek için kullanılır ve belirlenen kurallar çerçevesinde genellikle HTTP veya TCP üzerinden güvenli/güvensiz network erişimi sağlamak için kullanılır.
+  example.com'a tanımlı server yanıt veriyorsa ve üzerinde kubernetes varsa bundan faydalanmam için subdomain tanımı yapmam yeterli olacaktır. Böylece ornek.example.com adresinden web hizmeti verebilirim.  
 
 kubectl aracının temel kullanım metodu aşağıdaki gibidir:
 
@@ -53,5 +55,54 @@ Sıkça logs, describe ve exec kullanıyoruz. describe sub-command çıktısınd
 pod sağlıklı görünüyor ancak davranmıyorsa logs yardımımıza koşuyor. k logs [podName] ile logları ekrana bastırıyor veya -f parametresi de ekleyerek aktif bir log window oluşturuyoruz.
 Buradan da sağlıklı bir çıkarım yapamamamız halinde son çözüm olarak konteynere doğrudan elle müdahale ediyor, gerekmesi halinde aktif sistemde değişikliğe gidiyoruz.
 
+### Sistem veya altyapı sorunları ve hızlı çözümleri
+Genellikle aktif çalışan ve stabil node'larda servis (pod) tabanlı hatalar görüyor olsak da bazen network, disk veya sistem hataları ile karşılaşabiliyoruz.
+IngressController'ın hata üretmesi, diskin doluluk oranının yüksek olması veya o gün kendini iyi hissetmeyen bir sunucunun kernel veya OS üzerinden hata üretmesi sonucu 
+sistemlerimizde hatalı sonuçlar oluşabilir ve bunun sonu olarak testlerimiz hatalı sonuçlar verebilir.
+Bu tip durumlarda bireysel görüşüm bir developer'ın sorunun kendi tarafında olmadığı konusunda kesin sonuçlara ulaşabilecek bir yetkinlikte olması gerektiği yönündedir.
 
+Bunun için örnek bir senaryo (Yaşanmıştır.) üzerinden ilerleyeceğiz.
+
+Elimizdeki X1 (Ubuntu-Kubernetes) sisteminde koşan kubernetes altyapısında A1 ve A2 adında iki servisimiz var. Bu servisler sırasıyla yapılarında Java ve Node barındırıyor ve 
+  lokal testlerden geçerek deploy olmaya hak kazanmışlar.
+Nitekim bu deployment sonucunda Frontend için kullanılan ve Node koşan (A2) Pod'a erişemiyorum ve tanımladığım ingress bana 5XX hatası döndürüyor.
+Aksiyon planı ve komutlarım aşağıdaki gibi olacaktır.
+
+1) k get ing -> ingress kaynaklarını listeler. Böylece tarayıcıya yazdığım adresi kontrol edebilirim. 
+    HOSTS kısmında yazan adresi teyit ettiğimde ingress'in servis tanımına odaklanacağım.
+2) k get ing [ingName] -o yaml -> bana ingress tanımını yaml formatında ve detaylı olarak verecektir. 
+    Bu sayede kontrol edeceğim servisi seçebilirim.
+3)  get svc -> Konsepti anladığınızı düşünüyorum.
+4) k get svc [serviceName] -o yaml -> Burada servisin sunum yaptığı port'u ve 
+    pod/konteyner içinde bağlandığı portu kontrol edebilirim
+5) k get po -> koşan yükümün bağlı olduğu pod'u bulmak için kullanacağım
+6) k describe po -> pod'umun sağlıklı bir şekilde ayakta olduğunu, kubernetes tarafından belirlenmiş ve tanımlanabilen hatalardan birinde olmadığını doğrulamak için kullanacağım.
+7) k logs [podName] -> pod'un log dosyasında bilgilendirme için belirtilmiş "Running" veya "Service up in x seconds" mesajlarını arayabilir veya 
+    bu komutu grep ile birleştirerek belirli log kalıplarını sorgulayabilirim. Servisin hata mesajı vermemesi veya beklenen log'ları vermesi halinde şüphemiz code base'imizden network'e geçecektir.
+8) k get po [podName] -o yaml -> Detaylı şekilde pod manifestosunu detaylıca inceleyebiliriz artık ancak servisin portu ile ilgili bir tanım bulunmaması ve 
+    servise statik/environment üzerinden gömülmesi halinde servisi daha yakından incelememiz gerekecektir.
+9) k exec [podName] -- [komut] -> konteynerimiz içerisine genellikle test amacıyla veya servisimizle interaksiyon halinde bulunacak komutlar ekliyoruz. wget, cUrl, tar, ping, netstat, dig bunlardan bazıları. 
+    Çeşitli sorunların çözümünde kullandığımız bu komutları konteynerimiz içerisinden de çağırarak sorunun kaynağına bir adım daha yaklaşabiliriz.
+    Bu komutun sıklıkla kullandığımız bir şekli var: "k exec -it [podName] -- bash" 
+    Bu komut ile artık konteyner ortamımızdaki kabuğa bağlanabiliriz ve bu ortamda native'mişcesine çalışabiliriz.
+Terminaldeki ps ve env çıktılarımı incelediğimde servis portumun kubernetes service tanımımla uyumlu olmasını beklemeliyiz. Ki servisimiz dış dünyadan erişime açık olsun. 
+k edit svc [svcName] ile servisimizin target portunu değiştirerek sorunu çözebiliriz. 
+
+Bir de A1 servisindeki Java pod'unda yaşanabilecek bir hataya bakalım.
+A2 servisimden A1 servisime yapılan isteklerin bağlantı hatası yaşadığını varsayalım. 
+Demek ki servislerim arasında iletişim engeli bulunmakta. 
+Bu sorunun çözümü için yine aynı adımları uygulayabiliriz ancak bu sefer logs dosyasında Java kodunun veritabanına bağlanmakta sorun yaşadığını gördüğümüz bir senaryoyu konuşalım.
+
+Backend servisi veritabanı bağlantısını kuramadığı bir durumda sağlıklı yanıtlar üretemeyecektir.
+Veritabanı bağlantı detaylarını inceleyerek doğruluklarından emin olmamız gerekecektir.
+Veri tabanı özelinde yukarıdaki komut setini koşmamız halinde 6. adıma geldiğimizde veritabanı özelinde görebileceğimiz bir hata da 
+    "Failed to attach persistent volume" satırını içeren ve direkt olarak altyapıyı ilgilendiren sorun olabilir.
+
+Eğer görev ve sorumluluk zincirinizde "kubernetes cluster bakımı yapmak" veya "kubernetes hata ayıklama ve düzeltme" gibi tanımlar yoksa veya cluster'ı siz kurmadıysanız, 
+lütfen en yakın sistem/devops mühendisini çağırın. Bu sizi küçümser bir yaklaşım değil, görev ve sorumluluk sahası içerisindeki bireylerin tecrübelerinden yararlanarak sorunu hızla çözmeye odaklanan bir adımdır.
+
+Temel komut zincirlerini kullanarak sorunları tanımlama aşamalarını gördük. Sıralamamızın sonunda yazılım/devops yaşam döngülerinden uygun olanı devreye girerek ortam sağlıklı hale getirilecek ve 
+gerekmesi halinde yazılım üzerinde iyileştirmeler yapılacaktır. 
+
+Yukarıda belirtilenler sektör tanımlamaları değil tecrübeler sonucu oluşmuş hızlı ve aktif sorun çözüm gözlemleridir.
 
