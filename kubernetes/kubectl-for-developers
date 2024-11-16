@@ -96,7 +96,7 @@ Bu sorunun çözümü için yine aynı adımları uygulayabiliriz ancak bu sefer
 Backend servisi veritabanı bağlantısını kuramadığı bir durumda sağlıklı yanıtlar üretemeyecektir.
 Veritabanı bağlantı detaylarını inceleyerek doğruluklarından emin olmamız gerekecektir.
 Veri tabanı özelinde yukarıdaki komut setini koşmamız halinde 6. adıma geldiğimizde veritabanı özelinde görebileceğimiz bir hata da 
-    "Failed to attach persistent volume" satırını içeren ve direkt olarak altyapıyı ilgilendiren sorun olabilir.
+    "Failed to attach persistent volume" satırını içeren ve direkt olarak altyapıyı ilgilendiren sorun olabilir. Buna disk pressure da eklenebilir tabi ki.
 
 Eğer görev ve sorumluluk zincirinizde "kubernetes cluster bakımı yapmak" veya "kubernetes hata ayıklama ve düzeltme" gibi tanımlar yoksa veya cluster'ı siz kurmadıysanız, 
 lütfen en yakın sistem/devops mühendisini çağırın. Bu sizi küçümser bir yaklaşım değil, görev ve sorumluluk sahası içerisindeki bireylerin tecrübelerinden yararlanarak sorunu hızla çözmeye odaklanan bir adımdır.
