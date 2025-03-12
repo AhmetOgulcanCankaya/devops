@@ -3,6 +3,11 @@ variable "subscription_id" {
   default = "$subscription_id"
   description = "Container image and version to be deployed."
 }
+variable "rg_name" {
+  type = string
+  default = "rg_name"
+  description = "Container image and version to be deployed."
+}
 variable "container_image" {
   type = string
   default = "nginx:latest"
@@ -48,6 +53,12 @@ variable "vnet_name" {
 variable "subnet_name" {
   type = string
   default = "snet-container-app-dev-01" #change
+  description = "Resource group name for app to be deployed."
+}
+
+variable "subnet_id" {
+  type = string
+  default = "subnet_id" #change
   description = "Resource group name for app to be deployed."
 }
 

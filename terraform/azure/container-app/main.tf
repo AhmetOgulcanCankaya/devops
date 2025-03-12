@@ -12,25 +12,19 @@ provider "azurerm" {
   features {}
 }
 
-# Create Resource Group
-resource "azurerm_resource_group" "rg" {
-  name     = length(var.resource_group_name) == 0 ? "containerapp-rg" : var.resource_group_name
-  location = var.location
-}
-
 # Create Virtual Network
 resource "azurerm_virtual_network" "vnet" {
   name                = var.vnet_name
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = var.location
+  resource_group_name = var.rg_name
   address_space       = ["10.0.0.0/16"]
 }
 
 # Create Subnet for Container App
 resource "azurerm_subnet" "subnet" {
   name                 = var.subnet_name
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name  
+  resource_group_name  = var.rg_name
+  virtual_network_name = var.vnet_name  
   address_prefixes     = ["10.0.2.0/23"]
 
   # Required for Azure Container Apps to integrate with a subnet
@@ -48,8 +42,8 @@ resource "azurerm_subnet" "subnet" {
 # Create Log Analytics Workspace for monitoring
 resource "azurerm_log_analytics_workspace" "log_analytics" {
   name                = "my-containerapp-logs"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = var.location
+  resource_group_name = var.rg_name
   sku                 = "PerGB2018"  #Pay as you go
   retention_in_days   = 30  #Log retention
 }
@@ -57,11 +51,11 @@ resource "azurerm_log_analytics_workspace" "log_analytics" {
 # Create Container App Environment
 resource "azurerm_container_app_environment" "ca_env" {
   name                 = var.container_app_env
-  location             = azurerm_resource_group.rg.location
-  resource_group_name  = azurerm_resource_group.rg.name
+  location             = var.location
+  resource_group_name  = var.rg_name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.log_analytics.id
 
-  infrastructure_subnet_id = azurerm_subnet.subnet.id
+  infrastructure_subnet_id = var.subnet_id
   
 }
 
@@ -69,7 +63,7 @@ resource "azurerm_container_app_environment" "ca_env" {
 resource "azurerm_container_app" "app" {
   name                         = var.app_name
   container_app_environment_id = azurerm_container_app_environment.ca_env.id
-  resource_group_name          = azurerm_resource_group.rg.name
+  resource_group_name          = var.rg_name
   revision_mode                = "Single"
 
   template {
